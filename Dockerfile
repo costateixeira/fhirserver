@@ -23,7 +23,13 @@ RUN /work/bootstrap/linux-libraries.sh /work/bootstrap && \
     cp exec/pack/linux/*.so /usr/lib/
 RUN /work/fhirserver/build/linux-fhirserver.sh /work/bootstrap && \
     cp exec/pack/*.properties exec/64 && \
-    find . -name "*.o" -type f -delete -o -name "*.ppu" -type f -delete
+    find . -name "*.o" -type f -delete -o -name "*.ppu" -type f -delete && \
+    rm -r /work/bootstrap && \
+    rm -r /work/fhirserver/packages && \
+    rm -r /work/fhirserver/1-ClickServer && \
+    rm -r /work/fhirserver/server && \
+    rm -r /work/fhirserver/library && \
+    rm -r /work/fhirserver/dependencies
 
 
 ENV DISPLAY :99
