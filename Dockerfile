@@ -72,6 +72,8 @@ RUN cp /work/fhirserver/exec/pack/linux/start_bare.sh /work/fhirserver/exec/inst
     cp -r /work/fhirserver/server/web/* /work/fhirserver/exec/install/web && \
     cd /work/fhirserver/exec && tar -czvf ./install.tgz ./install/  && ls -la /work/fhirserver/exec
 
+# Set PATH to include the bin directory where executables are located
+ENV PATH="/work/fhirserver/exec/install/bin:${PATH}"
 
 # Set the health check
 HEALTHCHECK --interval=1m --timeout=10s --retries=5 \ 
@@ -126,8 +128,12 @@ RUN tar -xzvf install.tgz
 # Change working directory to the extracted folder
 WORKDIR /fhirserver/install
 
+ENV PATH="/fhirserver:${PATH}"
+
 # Set the script to be executable
 RUN chmod +x ./install.sh
+
+
 
 # Run the installation script
 RUN ./install.sh -nodaemon 
