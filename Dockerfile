@@ -126,6 +126,9 @@ RUN tar -xzvf install.tgz
 # Change working directory to the extracted folder
 WORKDIR /fhirserver/install
 
+# Set the script to be executable
+RUN chmod +x ./install.sh
+
 # Run the installation script
 RUN ./install.sh -nodaemon 
 # -zero=https://storage.googleapis.com/tx-fhir-org/config.json
