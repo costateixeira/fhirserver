@@ -33,6 +33,21 @@ jobs:
           -e MYSQL_PASSWORD=test \
           -e MYSQL_DATABASE=test \
           -d mysql:8
+
+
+    - name: Create Draft Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Draft Release ${{ github.ref }}
+        draft: true
+        prerelease: false
+
+
+          
     - name: Docker Build
       run: |
         docker  build \
@@ -72,17 +87,6 @@ jobs:
           -v ~/test-settings.ini:/work/fhirserver/exec/64/test-settings.ini \
           fhirserver -tests
 
-
-    - name: Create Draft Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Draft Release ${{ github.ref }}
-        draft: true
-        prerelease: false
 
     - name: Upload Release Asset
       uses: actions/upload-release-asset@v1
