@@ -73,6 +73,29 @@ jobs:
           -v ~/test-settings.ini:/work/fhirserver/exec/64/test-settings.ini \
           fhirserver -tests
 
+
+    - name: Create Draft Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Draft Release ${{ github.ref }}
+        draft: true
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./install.tgz
+        asset_name: install.tgz
+        asset_content_type: application/gzip
+
+        
 #    - name: Tag and push Docker image
 #      run: |
 #        # Extract the FHIR server version from the library/version.inc file
