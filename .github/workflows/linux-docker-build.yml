@@ -85,7 +85,7 @@ jobs:
           --network gh \
           -v ~/terminology:/terminology \
           -v ~/test-settings.ini:/work/fhirserver/exec/64/test-settings.ini \
-          fhirserver fhirserver -tests
+          fhirserver /root/fhirserver/fhirserver -tests
 
 
     - name: Upload Release Asset
