@@ -1419,10 +1419,7 @@ var
 begin
   i := 0;
 
-
-//  FEndPoint.
-fileToLoad := filePath([FServerContext.pcm.folder,pid]) ;
-
+  fileToLoad := filePath([FServerContext.pcm.folder,pid]) ;
 
   if (FileExists(fileToLoad)) then
     try
