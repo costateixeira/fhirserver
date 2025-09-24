@@ -1564,7 +1564,6 @@ begin
   Finally
     oFile.free;
   End;        
-  Logging.log('Loaded SCT from '+FSourceFile+' for '+VersionUri+'/'+VersionDate+', language = '+getDefaultLangRefSetName);
   if not Concept.FindConcept(RF2_MAGIC_PREFERRED, FPreferredTerm) then
     FPreferredTerm := 0;
   if not Concept.FindConcept(RF2_MAGIC_FSN, FFSN) then
@@ -2131,6 +2130,7 @@ begin
   else if FEditionId = '83821000000107' then result := 'UK Edition'
   else if FEditionId = '999000021000000109' then result := 'UK Clinical Edition'
   else if FEditionId = '5631000179106' then result := 'Uruguay Edition'
+  else if FEditionId = '21000325107' then result := 'Chilean Edition'
   else if FEditionId = '731000124108' then result := 'US Edition'
   else if FEditionId = '5991000124107' then result := 'US Edition (with ICD-10-CM maps)'
   else if FEditionId = inttostr(COMBINED_MODULE_ID) then
@@ -2192,16 +2192,28 @@ var
   iDesc, iDummy, module, kind, caps : Cardinal;
   iInt : Integer;
   date : TSnomedDate;
+  first : boolean;
 begin
   if iLang <> 0 then
     aMembers := loadLang(iLang);
   Concept.GetConcept(iConcept, Identity, Flags, date, Parents, Descriptions, Inbounds, outbounds, refsets);
   Descs := Refs.GetReferences(Descriptions);
+  first := true;
   For iLoop := 0 to High(descs) Do
   Begin
     Desc.GetDescription(descs[iLoop], iDesc, iId2, date, iDummy, module, kind, caps, refsets, valueses, active, lang);
-    if (active) And ((iLang = 0) or (FindMember(aMembers, descs[iLoop], iInt))) Then
-      list.addDesignation(iLoop = 0, true, codeForLang(lang), Strings.GetEntry(iDesc).trim);
+    if ((iLang = 0) or (FindMember(aMembers, descs[iLoop], iInt))) Then
+    begin
+      if active then
+      begin                                                                                         
+        list.addDesignation(first, true, '', codeForLang(lang), Strings.GetEntry(iDesc).trim).use :=
+          list.factory.wrapCoding(list.factory.makeCoding('http://snomed.info/sct', IntToStr(Concept.getConceptId(kind)), GetPNForConcept(kind)));
+        first := false;
+      end
+      else
+        list.addDesignation(false, true, 'inactive', codeForLang(lang), Strings.GetEntry(iDesc).trim).use :=
+           list.factory.wrapCoding(list.factory.makeCoding('http://snomed.info/sct', '900000000000546006', 'Inactive value'));
+    end;
   End;
 end;
 
@@ -4341,7 +4353,7 @@ begin
     try
       ListDisplayNames(list, iTerm, 0, $FF);
       d := normalise(concept.description);
-      ok := (list.preferredDisplay <> '') and (normalise(list.preferredDisplay) = d);
+      ok := (list.preferredDisplay(nil) <> '') and (normalise(list.preferredDisplay(nil)) = d);
       for i := 0 to list.designations.count - 1 do
         if not ok and (normalise(list.designations[i].value.asString) = d) then
         begin
@@ -5143,7 +5155,7 @@ begin
     raise ETerminologyError.create('Unable to find context in '+systemUri, itInvalid)
   else if ctxt.isComplex then
     // there's only one display name - for now?
-    list.addDesignation(true, true, '', FSct.displayExpression(ctxt.FExpression).Trim)
+    list.addDesignation(true, true, '', '', FSct.displayExpression(ctxt.FExpression).Trim)
   else
     FSct.ListDisplayNames(list, TSnomedExpressionContext(ctxt).reference, 0, $FF);
 end;
@@ -5205,11 +5217,12 @@ begin
       for i := Low(Descriptions) To High(Descriptions) Do
       Begin
         FSct.Desc.GetDescription(Descriptions[i], iWork, Identity, date, iDummy, module, kind, caps, refsets, valueses, active,blang);
-        if Active and (kind <> 0) Then
-        Begin
-          resp.addDesignation(codeForLang(blang), URI_SNOMED, FSct.GetConceptId(kind), FSct.GetPNForConcept(kind), FSct.Strings.GetEntry(iWork));
-        End;
-      End;
+        if (kind <> 0) Then
+          if active then
+            resp.addDesignation(codeForLang(blang), URI_SNOMED, FSct.GetConceptId(kind), FSct.GetPNForConcept(kind), FSct.Strings.GetEntry(iWork))
+          else
+            resp.addDesignation(codeForLang(blang), URI_SNOMED, '73425007', 'Inactive', FSct.Strings.GetEntry(iWork))
+       End;
     End;
 
     if hasProp(props, 'parent', true) then

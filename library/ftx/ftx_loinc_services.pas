@@ -109,11 +109,12 @@ type
     FKind : TLoincProviderContextKind;
     FCode : String;
     FDesc : String;
+    FStatus : String;
     FDisplays : TFslList<TDescriptionCacheEntry>;
     FChildren : TKeySet;
     procedure addChild(key : Integer);
   public
-    constructor Create(key : cardinal; kind : TLoincProviderContextKind; code, desc : String);
+    constructor Create(key : cardinal; kind : TLoincProviderContextKind; code, desc, status : String);
     destructor Destroy; override;
     function link : TLoincProviderContext; overload;
 
@@ -121,6 +122,7 @@ type
     property Kind : TLoincProviderContextKind read FKind;
     property Code : String read FCode;
     property Desc : String read FDesc;
+    property Status : String read FStatus;
   end;
 
   { TLoincDisplay }
@@ -210,6 +212,8 @@ type
     function locate(opContext : TTxOperationContext; code : String; altOpt : TAlternateCodeOptions; var message : String) : TCodeSystemProviderContext; override;
     function sameContext(opContext : TTxOperationContext; a, b : TCodeSystemProviderContext) : boolean; override;
     function IsAbstract(opContext : TTxOperationContext; context : TCodeSystemProviderContext) : boolean; override;
+    function IsInactive(opContext : TTxOperationContext; context : TCodeSystemProviderContext) : boolean; override;
+    function getCodeStatus(opContext : TTxOperationContext; context : TCodeSystemProviderContext) : String; override;
     function Code(opContext : TTxOperationContext; context : TCodeSystemProviderContext) : string; override;
     function Display(opContext : TTxOperationContext; context : TCodeSystemProviderContext; langList : THTTPLanguageList) : string; override;
     procedure Designations(opContext : TTxOperationContext; context : TCodeSystemProviderContext; list : TConceptDesignations); override;
@@ -475,7 +479,7 @@ begin
 
     FCodeList.add(nil); // keys start from 1
 
-    c.sql := 'Select CodeKey, Code, Type, Description from Codes order by CodeKey Asc';
+    c.sql := 'Select CodeKey, Code, Type, Codes.Description, StatusCodes.Description as Status from Codes, StatusCodes where StatusCodes.StatusKey = Codes.StatusKey order by CodeKey Asc';
     c.prepare;
     c.Execute;
     i := 0;
@@ -485,7 +489,7 @@ begin
       k := c.ColKeyByName['CodeKey'];
       if (i <> k) then
         raise EFslException.create('Error loading LOINC: Primary key has break in sequence at '+inttostr(k));
-      ci := TLoincProviderContext.create(c.ColKey[1], TLoincProviderContextKind(c.ColKey[3]-1), c.ColString[2], c.ColString[4]);
+      ci := TLoincProviderContext.create(c.ColKey[1], TLoincProviderContextKind(c.ColKey[3]-1), c.ColString[2], c.ColString[4], c.ColString[5]);
       FCodes.Add(c.ColStringByName['Code'], ci);
       FCodeList.add(ci.link);
       if (FFirstCodeKey = 0) and (ci.Kind = lpckCode) then
@@ -877,7 +881,7 @@ begin
     finally
       FLock.unlock;
     end;
-    list.addDesignation(true, true, 'en-US', (context as TLoincProviderContext).Desc);
+    list.addDesignation(true, true, '', 'en-US', (context as TLoincProviderContext).Desc);
     if (cache = nil) then
     begin
       cache := TFslList<TDescriptionCacheEntry>.create;
@@ -889,7 +893,7 @@ begin
           c.execute;
           while c.fetchNext do
           begin
-            list.addDesignation(false, 'LongCommonName' = c.ColStringByName['Type'], c.ColStringByName['Lang'], c.ColStringByName['Value']);
+            list.addDesignation(false, 'LongCommonName' = c.ColStringByName['Type'],  '', c.ColStringByName['Lang'], c.ColStringByName['Value']);
             cache.add(TDescriptionCacheEntry.create('LongCommonName' = c.ColStringByName['Type'], c.ColStringByName['Lang'], c.ColStringByName['Value']));
           end;
           c.terminate;
@@ -915,7 +919,7 @@ begin
     else
     begin
       for entry in cache do
-        list.addDesignation(false, entry.display, entry.lang, entry.value);
+        list.addDesignation(false, entry.display, '', entry.lang, entry.value);
     end;
   end;
 end;
@@ -1040,6 +1044,18 @@ end;
 function TLOINCServices.IsAbstract(opContext : TTxOperationContext; context: TCodeSystemProviderContext): boolean;
 begin
   result := false; // loinc don't do abstract
+end;
+
+function TLOINCServices.IsInactive(opContext: TTxOperationContext; context: TCodeSystemProviderContext): boolean;
+begin
+  Result := (context as TLoincProviderContext).Status = 'DISCOURAGED';
+end;
+
+function TLOINCServices.getCodeStatus(opContext: TTxOperationContext; context: TCodeSystemProviderContext): String;
+begin
+  Result := (context as TLoincProviderContext).Status;
+  if (Result = 'NotStated') then
+    result := '';
 end;
 
 function TLOINCServices.locate(opContext : TTxOperationContext; code: String; altOpt : TAlternateCodeOptions; var message: String): TCodeSystemProviderContext;
@@ -1426,13 +1442,14 @@ begin
 end;
 
 constructor TLoincProviderContext.Create(key: cardinal;
-  kind: TLoincProviderContextKind; code, desc: String);
+  kind: TLoincProviderContextKind; code, desc, status: String);
 begin
   inherited Create;
   FKey := key;
   FCode := code;
   FKind := kind;
   FDesc := desc;
+  FStatus := status;
   FDisplays := TFslList<TDescriptionCacheEntry>.create;
 end;
 

@@ -238,6 +238,7 @@ type
     function description : String; override;
     function name(context: TCodeSystemProviderContext): String; override;
     function version(): String; override;
+    function versionAlgorithm() : TFHIRVersionAlgorithm; override;
     function TotalCount : integer; override;
     function getPropertyDefinitions : TFslList<TFhirCodeSystemPropertyW>; override;
     function getIterator(opContext : TTxOperationContext; context : TCodeSystemProviderContext) : TCodeSystemIteratorContext; override;
@@ -261,6 +262,7 @@ type
     function listCodes(opContext : TTxOperationContext; ctxt : TCodeSystemProviderContext; altOpt : TAlternateCodeOptions) : TStringArray; override;
     function canParent : boolean; override;
     function hasAnyDisplays(langs : THTTPLanguageList) : boolean; override;
+    function versionIsMoreDetailed(v1, v2 : String): boolean; override;
 
     function hasSupplement(opContext : TTxOperationContext; url : String) : boolean; override;
     procedure listSupplements(opContext : TTxOperationContext; ts : TStringList); override;
@@ -280,7 +282,6 @@ type
     procedure getStatus(out status: TPublicationStatus; out standardsStatus: String; out experimental : boolean); override;
 
   end;
-
 
 implementation
 
@@ -834,6 +835,11 @@ begin
   result := fcs.CodeSystem.hasAnyDisplays(langs);
 end;
 
+function TFhirCodeSystemProvider.versionIsMoreDetailed(v1, v2: String): boolean;
+begin
+  result := TFHIRVersions.versionMatches(FCs.CodeSystem.versionAlgorithm, v1, v2);
+end;
+
 function TFhirCodeSystemProvider.description: String;
 begin
   result := fcs.CodeSystem.name;
@@ -1041,7 +1047,7 @@ begin
 
   list.baseLang := FLanguages.parse(FCs.CodeSystem.language);
   if ctxt.concept.display <> '' then
-    list.addDesignation(true, true, FCs.CodeSystem.language, ctxt.concept.displayElement);
+    list.addDesignation(true, true, '', FCs.CodeSystem.language, ctxt.concept.displayElement);
 
   for ccd in ctxt.concept.designations.forEnum do
     list.addDesignation(ccd);
@@ -1052,7 +1058,7 @@ begin
     begin
       if (cc.display <> '') then
       begin
-        list.addDesignation(false, true, css.language, cc.displayElement); {no .link}
+        list.addDesignation(false, true, '', css.language, cc.displayElement); {no .link}
       end;
       for ccd in cc.designations.forEnum do
         list.addDesignation(ccd);
@@ -1527,6 +1533,11 @@ end;
 function TFhirCodeSystemProvider.version: String;
 begin
    result := FCs.CodeSystem.version;
+end;
+
+function TFhirCodeSystemProvider.versionAlgorithm(): TFHIRVersionAlgorithm;
+begin
+  Result := FCs.CodeSystem.versionAlgorithm;
 end;
 
 procedure TFhirCodeSystemProvider.iterateCodes(opContext : TTxOperationContext; op : String; base : TFhirCodeSystemConceptW; list : TFhirCodeSystemProviderFilterContext; filter : TCodeSystemCodeFilterProc; context : pointer; includeRoot : boolean; exception : TFhirCodeSystemConceptW = nil);

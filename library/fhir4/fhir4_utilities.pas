@@ -37,7 +37,7 @@ uses
   {$IFDEF MSWINDOWS} Windows, {$ENDIF}
   SysUtils, Classes, Generics.Collections, ZLib,
 
-  fsl_base, fsl_utilities, fsl_http, fsl_stream, fsl_json, fsl_turtle, fsl_xml, fsl_crypto, fsl_html,
+  fsl_base, fsl_utilities, fsl_http, fsl_stream, fsl_json, fsl_turtle, fsl_xml, fsl_crypto, fsl_html, fsl_logging,
   fsl_fetcher, fsl_web_stream,
 
   fhir_parser, fhir_objects, fhir_xhtml, fhir_utilities, fhir_uris,
@@ -5285,7 +5285,11 @@ end;
 function TFhirCodeSystemHelper.isInactive(concept: TFhirCodeSystemConcept): boolean;
 var
   p : TFhirCodeSystemConceptProperty;
+  s : String;
 begin
+  if (concept.code = 'CASE') then
+    Logging.log('case');
+
   result := false;
   for p in concept.property_List do
   begin
@@ -5296,11 +5300,17 @@ begin
     if (p.code = 'status') and ((p.value.ToString = 'inactive') or (p.value.ToString = 'retired')) then
       exit(true);
   end;
+  if (concept.hasExtension('http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status')) then
+  begin
+    s := concept.getExtensionString('http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status');
+    exit(StringArrayExistsInsensitive(['withdrawn'], s));
+  end;
 end;
 
 function TFhirCodeSystemHelper.isDeprecated(concept: TFhirCodeSystemConcept): boolean;
 var
   p : TFhirCodeSystemConceptProperty;
+  s : String;
 begin
   result := false;
   for p in concept.property_List do
@@ -5312,11 +5322,17 @@ begin
     if (p.code = 'status') and (p.value.ToString = 'deprecated') then
       exit(true);
   end;
+  if (concept.hasExtension('http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status')) then
+  begin
+    s := concept.getExtensionString('http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status');
+    exit('deprecated' = s);
+  end;
 end;
 
 function TFhirCodeSystemHelper.codeStatus(concept: TFhirCodeSystemConcept): String;
 var
   p : TFhirCodeSystemConceptProperty;
+  s : String;
 begin
   result := '';
   for p in concept.property_List do
@@ -5341,6 +5357,12 @@ begin
     if (p.code = 'retired') and (p.value is TFhirCode) and (TFHIRCode(p.value).value = 'true') then
       exit('retired');
   end;
+    if (concept.hasExtension('http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status')) then
+  begin
+    s := concept.getExtensionString('http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status');
+    exit(s);
+  end;
+
 end;
 
 
