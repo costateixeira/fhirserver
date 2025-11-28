@@ -174,9 +174,9 @@ type
     function hasText : boolean; override;
     function text : String; override;
     function code : TFhirIssueType; override;
-    procedure addIssue(issue : TFhirOperationOutcomeIssueW; free : boolean); override;
-    procedure addIssueNoId(level : TIssueSeverity; cause : TFHIRIssueType; path, message : String; code : TOpIssueCode; addIfDuplicate : boolean); override;
-    procedure addIssue(level : TIssueSeverity; cause : TFhirIssueType; path, msgId, message : String; code : TOpIssueCode; addIfDuplicate : boolean = false); overload; override;
+    function addIssue(issue : TFhirOperationOutcomeIssueW; free : boolean) : boolean; override;
+    function addIssueNoId(level : TIssueSeverity; cause : TFHIRIssueType; path, message : String; code : TOpIssueCode; addIfDuplicate : boolean) : boolean; override;
+    function addIssue(level : TIssueSeverity; cause : TFhirIssueType; path, msgId, message : String; code : TOpIssueCode; addIfDuplicate : boolean = false) : boolean; overload; override;
     procedure addDiagsIssue(message : string); override;
     function hasIssues : boolean; override;
     function issues : TFslList<TFhirOperationOutcomeIssueW>; override;
@@ -764,6 +764,7 @@ type
     function getName : String; override;
     function getVersion : String; override;
     function getVersionAlgorithm : TFHIRVersionAlgorithm; override;
+    function getVersionNeeded : boolean; override;
     function getDescription : String; override;
     procedure setDate(Value: TFslDateTime); override;
     procedure setDescription(Value: String); override;
@@ -1431,14 +1432,14 @@ end;
 
 { TFhirOperationOutcome5 }
 
-procedure TFhirOperationOutcome5.addIssue(issue: TFhirOperationOutcomeIssueW; free : boolean);
+function TFhirOperationOutcome5.addIssue(issue: TFhirOperationOutcomeIssueW; free : boolean) : boolean;
 begin
   (Fres as TFhirOperationOutcome).issueList.Add((issue.Element as TFhirOperationOutcomeIssue).link);
   if free then
     issue.free;
 end;
 
-procedure TFhirOperationOutcome5.addIssueNoId(level: TIssueSeverity; cause: TFHIRIssueType; path, message: String; code : TOpIssueCode; addIfDuplicate : boolean);
+function TFhirOperationOutcome5.addIssueNoId(level: TIssueSeverity; cause: TFHIRIssueType; path, message: String; code : TOpIssueCode; addIfDuplicate : boolean) : boolean;
 var
   iss : TFhirOperationOutcomeIssue;
 begin
@@ -1451,7 +1452,7 @@ begin
   begin
     for iss in (Fres as TFhirOperationOutcome).issueList do
       if (iss.details <> nil) and (iss.details.text = message) then
-        exit();
+        exit(false);
   end;
 
   iss := (Fres as TFhirOperationOutcome).issueList.Append;
@@ -1463,11 +1464,12 @@ begin
   iss.details.text := message;
   iss.locationList.Add(path);
   iss.expressionList.Add(path);
+  result := true;
 end;
 
-procedure TFhirOperationOutcome5.addIssue(level: TIssueSeverity;
+function TFhirOperationOutcome5.addIssue(level: TIssueSeverity;
   cause: TFhirIssueType; path, msgId, message: String; code: TOpIssueCode;
-  addIfDuplicate: boolean);
+  addIfDuplicate: boolean) : boolean;
 var
   iss : TFhirOperationOutcomeIssue;
 begin
@@ -1480,7 +1482,7 @@ begin
   begin
     for iss in (Fres as TFhirOperationOutcome).issueList do
       if (iss.details <> nil) and (iss.details.text = message) then
-        exit();
+        exit(false);
   end;
 
   iss := (Fres as TFhirOperationOutcome).issueList.Append;
@@ -1493,6 +1495,7 @@ begin
   iss.locationList.Add(path);
   iss.expressionList.Add(path);
   iss.addExtension('http://hl7.org/fhir/StructureDefinition/operationoutcome-message-id', msgid);
+  result := true;
 end;
 
 procedure TFhirOperationOutcome5.addDiagsIssue(message: string);
@@ -4375,6 +4378,11 @@ end;
 function TFhirCodeSystem5.getVersionAlgorithm: TFHIRVersionAlgorithm;
 begin
   result := interpretVersionAlgorithm(cs.versionAlgorithm);
+end;
+
+function TFhirCodeSystem5.getVersionNeeded: boolean;
+begin
+  result := cs.versionNeeded;
 end;
 
 { TFhirValueSetExpansion5 }

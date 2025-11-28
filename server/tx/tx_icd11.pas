@@ -70,7 +70,8 @@ type
     function getIterator(opContext : TTxOperationContext; context : TCodeSystemProviderContext) : TCodeSystemIteratorContext; override;
     function getNextContext(opContext : TTxOperationContext; context : TCodeSystemIteratorContext) : TCodeSystemProviderContext; override;
     function systemUri : String; override;
-    function version : String; override;
+    function version : String; override;    
+    function versionNeeded: boolean; override;
     function name(context : TCodeSystemProviderContext) : String; override;
     function getDisplay(opContext : TTxOperationContext; code : String; langList : THTTPLanguageList):String; override;
     function getDefinition(code : String):String; override;
@@ -123,7 +124,8 @@ begin
   inherited;
 end;
 
-function TICD11Provider.Code(context: TCodeSystemProviderContext): string;
+function TICD11Provider.Code(opContext: TTxOperationContext;
+  context: TCodeSystemProviderContext): string;
 begin
   result := '';
 end;
@@ -148,16 +150,19 @@ begin
   result := '';
 end;
 
-function TICD11Provider.Display(context: TCodeSystemProviderContext; langList : THTTPLanguageList): string;
+function TICD11Provider.Display(opContext: TTxOperationContext;
+  context: TCodeSystemProviderContext; langList: THTTPLanguageList): string;
 begin
   result := '';
 end;
 
-procedure TICD11Provider.Designations(context: TCodeSystemProviderContext; list: TConceptDesignations);
+procedure TICD11Provider.Designations(opContext: TTxOperationContext;
+  context: TCodeSystemProviderContext; list: TConceptDesignations);
 begin
 end;
 
-function TICD11Provider.doesFilter(prop: String; op: TFhirFilterOperator; value: String): boolean;
+function TICD11Provider.doesFilter(opContext: TTxOperationContext;
+  prop: String; op: TFhirFilterOperator; value: String): boolean;
 begin
   result := false;
 end;
@@ -205,17 +210,32 @@ begin
   result := '';
 end;
 
+function TICD11Provider.locate(opContext: TTxOperationContext; code: String;
+  altOpt: TAlternateCodeOptions; var message: String
+  ): TCodeSystemProviderContext;
+begin
+
+end;
+
+function TICD11Provider.locate(opContext: TTxOperationContext; code: String;
+  altOpt: TAlternateCodeOptions): TCodeSystemProviderContext;
+begin
+
+end;
+
 function TICD11Provider.getDisplay(opContext : TTxOperationContext; code: String; langList : THTTPLanguageList): String;
 begin
   result := '';
 end;
 
-function TICD11Provider.getIterator(context: TCodeSystemProviderContext): TCodeSystemIteratorContext;
+function TICD11Provider.getIterator(opContext: TTxOperationContext;
+  context: TCodeSystemProviderContext): TCodeSystemIteratorContext;
 begin
   result := nil;
 end;
 
-function TICD11Provider.getNextContext(context: TCodeSystemIteratorContext): TCodeSystemProviderContext;
+function TICD11Provider.getNextContext(opContext: TTxOperationContext;
+  context: TCodeSystemIteratorContext): TCodeSystemProviderContext;
 begin
   result := nil;
 end;
@@ -230,7 +250,8 @@ begin
   result := false;
 end;
 
-function TICD11Provider.IsAbstract(context: TCodeSystemProviderContext): boolean;
+function TICD11Provider.IsAbstract(opContext: TTxOperationContext;
+  context: TCodeSystemProviderContext): boolean;
 begin
   result := false;
 end;
@@ -318,6 +339,11 @@ end;
 function TICD11Provider.version: String;
 begin
   result := '';
+end;
+
+function TICD11Provider.versionNeeded: boolean;
+begin
+  Result := true;
 end;
 
 end.
