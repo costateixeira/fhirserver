@@ -1,6 +1,5 @@
-## Change Notes for 4.0.3:
+## Change Notes for 4.0.4:
 
-* Improve error message for inferSystem when multiple matches exist
 * Fix loading of $translate source system
 * Add support for $subsumes for tx.fhir.org
 * Add SCT description to error messages containing SCT version
