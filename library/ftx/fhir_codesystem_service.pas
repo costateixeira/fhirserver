@@ -238,6 +238,7 @@ type
     function description : String; override;
     function name(context: TCodeSystemProviderContext): String; override;
     function version(): String; override;
+    function versionNeeded: boolean; override;
     function versionAlgorithm() : TFHIRVersionAlgorithm; override;
     function TotalCount : integer; override;
     function getPropertyDefinitions : TFslList<TFhirCodeSystemPropertyW>; override;
@@ -1533,6 +1534,11 @@ end;
 function TFhirCodeSystemProvider.version: String;
 begin
    result := FCs.CodeSystem.version;
+end;
+
+function TFhirCodeSystemProvider.versionNeeded: boolean;
+begin
+  Result := FCs.CodeSystem.versionNeeded;
 end;
 
 function TFhirCodeSystemProvider.versionAlgorithm(): TFHIRVersionAlgorithm;

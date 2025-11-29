@@ -586,6 +586,7 @@ var
   ts : TStringList;
   i : integer;
   va : TFHIRVersionAlgorithm;
+  errLvl : TIssueSeverity;
 begin
   csa := findCodeSystem(systemURI, '', FParams, ALL_TFhirCodeSystemContentMode, true, false, true, op); // it's deliberate to pass no version here
   try
@@ -610,8 +611,11 @@ begin
       try
         if (cs <> nil) and (cs.version <> versionCoding) and not cs.versionIsMoreDetailed(versionCoding, cs.version) then
         begin
+          errLvl := isError;
           if result = '' then
           begin
+            if (not cs.versionNeeded) then
+              errLvl := isWarning;
             msg := FI18n.translate('VALUESET_VALUE_MISMATCH_DEFAULT', FParams.HTTPLanguages, [systemUri, cs.version, versionVS, versionCoding]);
             mid := 'VALUESET_VALUE_MISMATCH_DEFAULT';
           end
@@ -625,8 +629,9 @@ begin
             msg := FI18n.translate('VALUESET_VALUE_MISMATCH', FParams.HTTPLanguages, [systemUri, versionVS, versionCoding]);
             mid := 'VALUESET_VALUE_MISMATCH'
           end;
-          op.addIssue(isError, itInvalid, addToPath(path, 'version'), mid, msg, oicVSProcessing);
-          messages.add(msg);
+          op.addIssue(errLvl, itInvalid, addToPath(path, 'version'), mid, msg, oicVSProcessing);
+          if (errLvl = isError) then
+            messages.add(msg);
           cs2 := findCodeSystem(systemURI, versionCoding, FParams, [cscmComplete, cscmFragment], true, false, true, op);
           if cs2 <> nil then
             cs2.free
@@ -844,6 +849,59 @@ begin
     result := system+'|'+version;
 end;
 
+function Unknown_Code_in_VersionSCT(url : String): String;
+begin
+  if (url = 'http://snomed.info/sct') then
+    result := 'Unknown_Code_in_Version_SCT'
+  else
+    result := 'Unknown_Code_in_Version';
+end;
+
+function SCTVersion(url, ver : String): String;
+var
+  s : TArray<String>;
+begin
+  if (url <> 'http://snomed.info/sct') or (ver = '') then
+    result := ''
+  else
+  begin
+    result := 'unknown';
+    s := ver.split(['/']);
+    if length(s) >= 5 then
+    begin
+      if s[4] = '900000000000207008' then result := 'International Edition'
+      else if s[4] = '449081005' then result := 'International Spanish Edition'
+      else if s[4] = '11000221109' then result := 'Argentinian Edition'
+      else if s[4] = '32506021000036107' then result := 'Australian Edition (with drug extension)'
+      else if s[4] = '11000234105' then result := 'Austrian Edition'
+      else if s[4] = '11000172109' then result := 'Belgian Edition'
+      else if s[4] = '20621000087109' then result := 'Canadian English Edition'
+      else if s[4] = '20611000087101' then result := 'Canadian Canadian French Edition'
+      else if s[4] = '11000279109' then result := 'Czech Edition'
+      else if s[4] = '554471000005108' then result := 'Danish Edition'
+      else if s[4] = '11000181102' then result := 'Estonian Edition'
+      else if s[4] = '11000229106' then result := 'Finnish Edition'
+      else if s[4] = '11000274103' then result := 'German Edition'
+      else if s[4] = '1121000189102' then result := 'Indian Edition'
+      else if s[4] = '827022005' then result := 'IPS Terminology'
+      else if s[4] = '11000220105' then result := 'Irish Edition'
+      else if s[4] = '11000146104' then result := 'Netherlands Edition'
+      else if s[4] = '21000210109' then result := 'New Zealand Edition'
+      else if s[4] = '51000202101' then result := 'Norwegian Edition'
+      else if s[4] = '11000267109' then result := 'Republic of Korea Edition (South Korea)'
+      else if s[4] = '900000001000122104' then result := 'Spanish National Edition'
+      else if s[4] = '45991000052106' then result := 'Swedish Edition'
+      else if s[4] = '2011000195101' then result := 'Swiss Edition'
+      else if s[4] = '83821000000107' then result := 'UK Edition'
+      else if s[4] = '999000021000000109' then result := 'UK Clinical Edition'
+      else if s[4] = '5631000179106' then result := 'Uruguay Edition'
+      else if s[4] = '21000325107' then result := 'Chilean Edition'
+      else if s[4] = '731000124108' then result := 'US Edition'
+      else if s[4] = '5991000124107' then result := 'US Edition (with ICD-10-CM maps)'
+    end;
+  end;
+end;
+
 function TValueSetChecker.check(path, system, version, code: String; abstractOk, inferSystem: boolean; displays: TConceptDesignations;
   unknownSystems : TStringList;
   var ver: String; var inactive : boolean; var normalForm : String; var vstatus : String; var cause: TFhirIssueType; op: TFhirOperationOutcomeW;
@@ -981,7 +1039,7 @@ begin
               result := bFalse;
               cause := itCodeInvalid;
               FLog := 'Unknown code';
-              msg := FI18n.translate('Unknown_Code_in_Version', FParams.HTTPLanguages, [code, cs.systemUri, cs.version]);
+              msg := FI18n.translate(Unknown_Code_in_VersionSCT(cs.systemUri), FParams.HTTPLanguages, [code, cs.systemUri, cs.version, SCTVersion(cs.systemUri, cs.version)]);
               messages.add(msg);
               op.addIssue(isError, itCodeInvalid, addToPath(path, 'code'), 'Unknown_Code_in_Version', msg, oicInvalidCode);
             end;
@@ -1105,7 +1163,7 @@ begin
               result := bFalse;
               cause := itCodeInvalid;
               FLog := 'Unknown code';
-              msg := FI18n.translate('Unknown_Code_in_Version', FParams.HTTPLanguages, [code, system, version]);
+              msg := FI18n.translate(Unknown_Code_in_VersionSCT(system), FParams.HTTPLanguages, [code, system, version, SCTVersion(system, version)]);
               messages.add(msg);
               op.addIssue(isWarning, itCodeInvalid, addToPath(path, 'code'), 'Unknown_Code_in_Version', msg, oicInvalidCode);
             end;
@@ -1687,7 +1745,6 @@ begin
             if (v = bFalse) and not FAllValueSet and (mode = vcmCodeableConcept) then
             begin
               m := FI18n.translate('None_of_the_provided_codes_are_in_the_value_set_one', FParams.HTTPLanguages, ['', FValueSet.vurl, ''''+cc+'''']);
-              msg(m);
               p := issuePath + '.coding['+inttostr(i)+'].code';
               op.addIssue(isInformation, itCodeInvalid, p, 'None_of_the_provided_codes_are_in_the_value_set_one', m, oicThisNotInVS);
               if cause = itNull then
@@ -1910,7 +1967,7 @@ begin
                        ts.add(vs);
                        if (prov.contentMode = cscmComplete) then
                        begin
-                         m := FI18N.translate('Unknown_Code_in_Version', FParams.HTTPLanguages, [c.code, ws, prov.version]);
+                         m := FI18N.translate(Unknown_Code_in_VersionSCT(ws), FParams.HTTPLanguages, [c.code, ws, prov.version, SCTVersion(ws, prov.version)]);
                          cause := itCodeInvalid;
                          msg(m);
                          op.addIssue(isError, itCodeInvalid, addToPath(path, 'code'), 'Unknown_Code_in_Version', m, oicInvalidCode);
@@ -1983,7 +2040,6 @@ begin
             end;
             //else
             //  m := FI18n.translate('None_of_the_provided_codes_are_in_the_value_set_other', FParams.HTTPLanguages, ['', FValueSet.vurl, codelist]);
-            msg(m);
 
             if mode = vcmCodeableConcept then
               p := ''
@@ -1996,7 +2052,8 @@ begin
             else
               p := issuePath;
 
-            op.addIssue(isError, itCodeInvalid, p, mid, m, oicNotInVS);
+            if (op.addIssue(isError, itCodeInvalid, p, mid, m, oicNotInVS)) then
+              msg(m);
             if cause = itNull then
               cause := itUnknown;
           end;
@@ -2220,7 +2277,8 @@ begin
           if cs.contentMode <> cscmComplete then
             op.addIssue(isWarning, itCodeInvalid, addToPath(path, 'code'), 'UNKNOWN_CODE_IN_FRAGMENT', FI18n.translate('UNKNOWN_CODE_IN_FRAGMENT', FParams.HTTPLanguages, [code, cs.systemUri, cs.version]), oicInvalidCode)
           else
-            op.addIssue(isError, itCodeInvalid, addToPath(path, 'code'), 'Unknown_Code_in_Version', FI18n.translate('Unknown_Code_in_Version', FParams.HTTPLanguages, [code, cs.systemUri, cs.version]), oicInvalidCode);
+            op.addIssue(isError, itCodeInvalid, addToPath(path, 'code'), 'Unknown_Code_in_Version',
+               FI18n.translate(Unknown_Code_in_VersionSCT(cs.systemUri), FParams.HTTPLanguages, [code, cs.systemUri, cs.version, SCTVersion(cs.systemUri, cs.version)]), oicInvalidCode);
       end
       else if not (abstractOk or not cs.IsAbstract(FOpContext, loc)) then
       begin
@@ -2538,7 +2596,8 @@ begin
     if loc = nil then
     begin
       if (not FParams.membershipOnly) then
-        op.addIssue(isError, itCodeInvalid, addToPath(path, 'code'), 'Unknown_Code_in_Version', FI18n.translate('Unknown_Code_in_Version', FParams.HTTPLanguages, [code, cs.systemUri, cs.version]), oicInvalidCode)
+        op.addIssue(isError, itCodeInvalid, addToPath(path, 'code'), 'Unknown_Code_in_Version',
+        FI18n.translate(Unknown_Code_in_VersionSCT(cs.systemUri), FParams.HTTPLanguages, [code, cs.systemUri, cs.version, SCTVersion(cs.systemUri, cs.version)]), oicInvalidCode)
     end
     else if not (abstractOk or not cs.IsAbstract(FOpContext, loc)) then
     begin
