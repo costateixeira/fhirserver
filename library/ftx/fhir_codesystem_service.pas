@@ -238,6 +238,7 @@ type
     function description : String; override;
     function name(context: TCodeSystemProviderContext): String; override;
     function version(): String; override;
+    function versionNeeded: boolean; override;
     function versionAlgorithm() : TFHIRVersionAlgorithm; override;
     function TotalCount : integer; override;
     function getPropertyDefinitions : TFslList<TFhirCodeSystemPropertyW>; override;
@@ -1535,6 +1536,11 @@ begin
    result := FCs.CodeSystem.version;
 end;
 
+function TFhirCodeSystemProvider.versionNeeded: boolean;
+begin
+  Result := FCs.CodeSystem.versionNeeded;
+end;
+
 function TFhirCodeSystemProvider.versionAlgorithm(): TFHIRVersionAlgorithm;
 begin
   Result := FCs.CodeSystem.versionAlgorithm;
@@ -1888,7 +1894,7 @@ begin
       result.free;
     end;
   end
-  else if (op = foEqual) and (prop = 'code') then
+  else if (op = foEqual) and ((prop = 'code') or (prop = 'concept')) then
   begin
     result := TFhirCodeSystemProviderFilterContext.Create;
     try

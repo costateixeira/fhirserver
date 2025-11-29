@@ -162,7 +162,8 @@ type
 
     function expandLimitation : Integer; override;
     function systemUri : String; override;
-    function version : String; override;
+    function version : String; override;      
+    function versionNeeded: boolean; override;
     function name(context : TCodeSystemProviderContext) : String; override;
     function description : String; override;
     function TotalCount : integer;  override;
@@ -628,6 +629,11 @@ end;
 function TCPTServices.version : String;
 begin
   result := FVersion;
+end;
+
+function TCPTServices.versionNeeded: boolean;
+begin
+  Result := true;
 end;
 
 function TCPTServices.name(context : TCodeSystemProviderContext) : String;

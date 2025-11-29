@@ -301,6 +301,7 @@ Type
     function systemUri() : String; virtual; abstract;
     function version() : String; virtual;
     function versionAlgorithm() : TFHIRVersionAlgorithm; virtual;
+    function versionNeeded : boolean; virtual;
     function defaultToLatest : boolean; virtual;
     function defLang() : TIETFLang; virtual;
     function hasAnyDisplays(disp : THTTPLanguageList) : boolean; virtual;
@@ -1326,6 +1327,11 @@ end;
 function TCodeSystemProvider.versionAlgorithm(): TFHIRVersionAlgorithm;
 begin
   result := vaUnknown;
+end;
+
+function TCodeSystemProvider.versionNeeded: boolean;
+begin
+  result := false;
 end;
 
 function TCodeSystemProvider.defaultToLatest: boolean;

@@ -65,6 +65,7 @@ Type
 
 const
   CODES_TFhirFilterOperator: Array[TFilterOperator] of String = ('', '=', 'is-a', 'descendent-of', 'is-not-a', 'regex', 'in', 'not-in', 'generalizes', 'exists', 'child-of', 'descendent-leaf', 'of');
+  CODES_TFhirFilterOperatorVCL: Array[TFilterOperator] of String = ('', '=', '<<', '<', '~<<', '/', '^', '~^', '>>', '?', '<!', '!!<', '.');
   CODES_TPublicationStatus: Array[TPublicationStatus] of String = ('', 'draft', 'active', 'retired');
   CODES_TTokenCategory : array [TTokenCategory] of String = ('Clinical', 'Data', 'Meds', 'Schedule', 'Audit', 'Documents', 'Financial', 'MedicationDefinitions', 'Other');
   CODES_TOpIssueCode : array [TOpIssueCode] of String = ('', 'not-in-vs', 'this-code-not-in-vs', 'invalid-code', 'code-comment', 'invalid-display', 'display-comment', 'not-found', 'code-rule', 'vs-invalid', 'cannot-infer', 'status-check', 'invalid-data', 'process-note', 'version-error');
@@ -409,9 +410,9 @@ type
     function severity : TIssueSeverity; virtual; abstract;
     function code :  TFhirIssueType; virtual; abstract;
 
-    procedure addIssue(issue : TFhirOperationOutcomeIssueW; free : boolean); overload; virtual; abstract;
-    procedure addIssueNoId(level : TIssueSeverity; cause : TFhirIssueType; path, message : String; issueCode : TOpIssueCode; addIfDuplicate : boolean = false); overload; virtual; abstract;
-    procedure addIssue(level : TIssueSeverity; cause : TFhirIssueType; path, msgId, message : String; issueCode : TOpIssueCode; addIfDuplicate : boolean = false); overload; virtual; abstract;
+    function addIssue(issue : TFhirOperationOutcomeIssueW; free : boolean): boolean; overload; virtual; abstract;
+    function addIssueNoId(level : TIssueSeverity; cause : TFhirIssueType; path, message : String; issueCode : TOpIssueCode; addIfDuplicate : boolean = false): boolean; overload; virtual; abstract;
+    function addIssue(level : TIssueSeverity; cause : TFhirIssueType; path, msgId, message : String; issueCode : TOpIssueCode; addIfDuplicate : boolean = false): boolean; overload; virtual; abstract;
     procedure addDiagsIssue(message : string); virtual; abstract;
     function hasIssues : boolean; virtual; abstract;
     function issues : TFslList<TFhirOperationOutcomeIssueW>; virtual; abstract;
@@ -849,6 +850,7 @@ type
     function getCount: integer; virtual; abstract;
     procedure setCount(Value: integer); virtual; abstract;
     function sizeInBytesV(magic : integer) : cardinal; override;
+    function GetVersionNeeded : boolean; virtual; abstract;
   public
     destructor Destroy; override;
     function link : TFhirCodeSystemW; overload;
@@ -860,6 +862,7 @@ type
     function copyright : String; virtual; abstract;
     function language : String; virtual; abstract;
     property caseSensitive : boolean read GetCaseSensitive;
+    property versionNeeded : boolean read GetVersionNeeded;
 
     function properties : TFslList<TFhirCodeSystemPropertyW>;  virtual; abstract;
     function propertyCode(uri : String) : String;
