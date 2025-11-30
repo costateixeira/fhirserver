@@ -1109,30 +1109,15 @@ var
   all : TFslList<TFHIRConceptMapW>;
   cm : TFHIRConceptMapW;
 begin
-  Logging.log('looking for a cm match for '+ srcCS+'/'+srcVS+'/'+tgtCS+'/'+tgtVS);
   for mr in txResources do
     if (mr.resource is TFHIRConceptMapW) then
       if mapOk(mr.resource as TFHIRConceptMapW, srcCS, srcVS, tgtCS, tgtVS) then
-      begin
-        list.add(mr.resource.link as TFHIRConceptMapW);   
-        Logging.log('match: '+cmToTxt(mr.resource as TFHIRConceptMapW));
-      end
-      else
-      begin
-        Logging.log('not a match: '+cmToTxt(mr.resource as TFHIRConceptMapW));
-      end;
+        list.add(mr.resource.link as TFHIRConceptMapW);
   all := FServer.GetConceptMapList;
   try
     for cm in all do
       if mapOk(cm, srcCS, srcVS, tgtCS, tgtVS) then
-      begin
-        Logging.log('match: '+cmToTxt(cm));
         list.add(cm.link);
-      end
-      else
-      begin
-        Logging.log('not relevant: '+cmToTxt(cm));
-      end;
   finally
     all.free;
   end;
@@ -1178,6 +1163,8 @@ begin
               else
               begin
                 srcSystem := findSystem(params, 'sourceSystem', 'source');
+                if (srcSystem = '') then
+                  srcSystem := findSystem(params, 'system', 'source');  // work around past bug
                 tgtSystem := findSystem(params, 'targetSystem', 'target');
                 findConceptMap(cml, srcSystem, params.str('sourceScope'), tgtSystem, params.str('targetScope'), txResources);
               end;
