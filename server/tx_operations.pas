@@ -1094,21 +1094,45 @@ begin
   // Logging.log('Map: '+map.url+' ('+map.source+'->'+map.target+'): '+boolToStr(result)+' for '+srcCS+':'+srcVS+' -> '+tgtCS+':'+tgtVS);
 end;
 
+function cmToTxt(cm : TFHIRConceptMapW) : String;
+var
+  cmg : TFhirConceptMapGroupW;
+begin
+  result := cm.vurl+': '+cm.source+'-->'+cm.target;
+  for cmg in cm.groups.forEnum do
+    result := result+'; '+cmg.source+'->'+cmg.target;
+end;
+
 procedure TFhirConceptMapTranslationOperation.findConceptMap(list : TFslList<TFHIRConceptMapW>; srcCS, srcVS, tgtCS, tgtVS: String; txResources: TFslList<TFHIRCachedMetadataResource>);
 var
   mr : TFHIRCachedMetadataResource;
   all : TFslList<TFHIRConceptMapW>;
   cm : TFHIRConceptMapW;
 begin
+  Logging.log('looking for a cm match for '+ srcCS+'/'+srcVS+'/'+tgtCS+'/'+tgtVS);
   for mr in txResources do
     if (mr.resource is TFHIRConceptMapW) then
       if mapOk(mr.resource as TFHIRConceptMapW, srcCS, srcVS, tgtCS, tgtVS) then
-        list.add(mr.resource.link as TFHIRConceptMapW);
+      begin
+        list.add(mr.resource.link as TFHIRConceptMapW);   
+        Logging.log('match: '+cmToTxt(mr.resource as TFHIRConceptMapW));
+      end
+      else
+      begin
+        Logging.log('not a match: '+cmToTxt(mr.resource as TFHIRConceptMapW));
+      end;
   all := FServer.GetConceptMapList;
   try
     for cm in all do
       if mapOk(cm, srcCS, srcVS, tgtCS, tgtVS) then
+      begin
+        Logging.log('match: '+cmToTxt(cm));
         list.add(cm.link);
+      end
+      else
+      begin
+        Logging.log('not relevant: '+cmToTxt(cm));
+      end;
   finally
     all.free;
   end;
