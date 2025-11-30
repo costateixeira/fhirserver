@@ -1,7 +1,7 @@
-## Change Notes for 4.0.5:
+## Change Notes for {ver}:
 
-* debugging release
+* 
 
 ## Conformance Notes:
 
-* n/a
+* 
