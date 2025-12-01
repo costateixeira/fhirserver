@@ -1094,6 +1094,15 @@ begin
   // Logging.log('Map: '+map.url+' ('+map.source+'->'+map.target+'): '+boolToStr(result)+' for '+srcCS+':'+srcVS+' -> '+tgtCS+':'+tgtVS);
 end;
 
+function cmToTxt(cm : TFHIRConceptMapW) : String;
+var
+  cmg : TFhirConceptMapGroupW;
+begin
+  result := cm.vurl+': '+cm.source+'-->'+cm.target;
+  for cmg in cm.groups.forEnum do
+    result := result+'; '+cmg.source+'->'+cmg.target;
+end;
+
 procedure TFhirConceptMapTranslationOperation.findConceptMap(list : TFslList<TFHIRConceptMapW>; srcCS, srcVS, tgtCS, tgtVS: String; txResources: TFslList<TFHIRCachedMetadataResource>);
 var
   mr : TFHIRCachedMetadataResource;
@@ -1154,6 +1163,8 @@ begin
               else
               begin
                 srcSystem := findSystem(params, 'sourceSystem', 'source');
+                if (srcSystem = '') then
+                  srcSystem := findSystem(params, 'system', 'source');  // work around past bug
                 tgtSystem := findSystem(params, 'targetSystem', 'target');
                 findConceptMap(cml, srcSystem, params.str('sourceScope'), tgtSystem, params.str('targetScope'), txResources);
               end;
